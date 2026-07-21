@@ -1,0 +1,16 @@
+{
+  "name": "sillytavern-shujuku-settings-vault",
+  "version": "0.1.1",
+  "description": "A scoped server-side configuration vault for the Shujuku Tavern Helper userscript.",
+  "main": "index.js",
+  "type": "commonjs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juxingmaomi/sillytavern-shujuku-settings-vault.git"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check index.js && node --check ui/index.js"
+  }
+}

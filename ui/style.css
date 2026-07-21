@@ -1,0 +1,398 @@
+.svault-panel {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin: 12px 0;
+  padding: 12px 0;
+  border-top: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 75%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 75%, transparent);
+  color: var(--SmartThemeBodyColor);
+  box-sizing: border-box;
+}
+
+.svault-heading,
+.svault-title-line,
+.svault-health,
+.svault-actions,
+.svault-notice,
+.svault-report summary {
+  display: flex;
+  align-items: center;
+}
+
+.svault-heading {
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.svault-title-line {
+  gap: 8px;
+  min-width: 0;
+  font-size: calc(var(--mainFontSize) * 1.05);
+}
+
+.svault-title-line > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svault-version {
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 75%, transparent);
+  border-radius: 6px;
+  font-size: calc(var(--mainFontSize) * 0.78);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.svault-health {
+  flex: 0 0 auto;
+  gap: 6px;
+  font-size: calc(var(--mainFontSize) * 0.84);
+  opacity: 0.8;
+}
+
+.svault-health.is-ok,
+.svault-status-grid strong.is-ok {
+  color: #56a878;
+  opacity: 1;
+}
+
+.svault-health.is-error,
+.svault-status-grid strong.is-error {
+  color: #d26868;
+  opacity: 1;
+}
+
+.svault-status-grid strong.is-warning {
+  color: #d7a34b;
+}
+
+.svault-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--SmartThemeBorderColor) 35%, transparent);
+}
+
+.svault-status-grid > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 10px;
+  background: color-mix(in srgb, var(--SmartThemeBlurTintColor) 92%, transparent);
+}
+
+.svault-status-grid span {
+  font-size: calc(var(--mainFontSize) * 0.78);
+  opacity: 0.65;
+}
+
+.svault-status-grid strong {
+  overflow: hidden;
+  font-size: calc(var(--mainFontSize) * 0.9);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svault-actions {
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.svault-button.menu_button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 34px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 7px;
+  letter-spacing: 0;
+}
+
+.svault-actions-primary .svault-button {
+  flex: 1 1 130px;
+}
+
+.svault-actions-secondary .svault-button {
+  flex: 1 1 110px;
+  opacity: 0.9;
+}
+
+.svault-button-accent {
+  border-color: color-mix(in srgb, var(--SmartThemeEmColor) 65%, var(--SmartThemeBorderColor)) !important;
+}
+
+.svault-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42 !important;
+}
+
+.svault-notice {
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid color-mix(in srgb, var(--SmartThemeEmColor) 65%, transparent);
+  background: color-mix(in srgb, var(--SmartThemeEmColor) 7%, transparent);
+  font-size: calc(var(--mainFontSize) * 0.84);
+  line-height: 1.55;
+}
+
+.svault-notice i {
+  margin-top: 3px;
+}
+
+.svault-report {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 70%, transparent);
+  border-radius: 8px;
+}
+
+.svault-report summary {
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.svault-report-content {
+  display: grid;
+  gap: 10px;
+  max-height: min(58vh, 560px);
+  padding: 0 10px 10px;
+  overflow: auto;
+}
+
+.svault-report-content h4 {
+  margin: 5px 0 0;
+  font-size: calc(var(--mainFontSize) * 0.92);
+  letter-spacing: 0;
+}
+
+.svault-report-content p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.svault-report-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 55%, transparent);
+  font-size: calc(var(--mainFontSize) * 0.78);
+  opacity: 0.75;
+}
+
+.svault-result {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border-left: 3px solid var(--SmartThemeBorderColor);
+  background: color-mix(in srgb, var(--SmartThemeBorderColor) 8%, transparent);
+}
+
+.svault-result.is-warning {
+  border-left-color: #d7a34b;
+  background: color-mix(in srgb, #d7a34b 9%, transparent);
+}
+
+.svault-result.is-ok {
+  border-left-color: #56a878;
+  background: color-mix(in srgb, #56a878 9%, transparent);
+}
+
+.svault-result span {
+  font-size: calc(var(--mainFontSize) * 0.84);
+  opacity: 0.78;
+}
+
+.svault-friendly-list {
+  display: grid;
+  gap: 6px;
+}
+
+.svault-friendly-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.1fr) minmax(100px, 1fr) max-content minmax(100px, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 55%, transparent);
+  border-radius: 7px;
+}
+
+.svault-friendly-row.is-important {
+  border-color: color-mix(in srgb, #d7a34b 55%, var(--SmartThemeBorderColor));
+}
+
+.svault-friendly-row > div,
+.svault-friendly-row > p {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+}
+
+.svault-friendly-row > div span,
+.svault-friendly-row small {
+  font-size: calc(var(--mainFontSize) * 0.72);
+  opacity: 0.62;
+}
+
+.svault-friendly-row strong,
+.svault-friendly-row p {
+  overflow-wrap: anywhere;
+}
+
+.svault-friendly-row > i {
+  opacity: 0.45;
+}
+
+.svault-friendly-row em {
+  grid-column: 1 / -1;
+  font-size: calc(var(--mainFontSize) * 0.76);
+  font-style: normal;
+  opacity: 0.7;
+}
+
+.svault-technical {
+  border-top: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 45%, transparent);
+  padding-top: 7px;
+}
+
+.svault-technical > summary {
+  cursor: pointer;
+  font-size: calc(var(--mainFontSize) * 0.8);
+  opacity: 0.72;
+}
+
+.svault-diff-list,
+.svault-timeline {
+  display: grid;
+  gap: 5px;
+}
+
+.svault-diff-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.2fr) max-content minmax(100px, 1fr) minmax(100px, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 7px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 40%, transparent);
+  font-size: calc(var(--mainFontSize) * 0.8);
+}
+
+.svault-diff-row code {
+  overflow-wrap: anywhere;
+  color: var(--SmartThemeBodyColor);
+}
+
+.svault-diff-row > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.svault-diff-row small {
+  opacity: 0.58;
+}
+
+.svault-diff-row span {
+  overflow-wrap: anywhere;
+}
+
+.svault-diff-kind {
+  padding: 1px 5px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.svault-diff-kind.is-added {
+  color: #56a878;
+  background: color-mix(in srgb, #56a878 12%, transparent);
+}
+
+.svault-diff-kind.is-removed {
+  color: #d26868;
+  background: color-mix(in srgb, #d26868 12%, transparent);
+}
+
+.svault-diff-kind.is-changed {
+  color: #d7a34b;
+  background: color-mix(in srgb, #d7a34b 12%, transparent);
+}
+
+.svault-timeline > div {
+  display: grid;
+  grid-template-columns: minmax(130px, max-content) minmax(0, 1fr) max-content;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 40%, transparent);
+  font-size: calc(var(--mainFontSize) * 0.8);
+}
+
+.svault-timeline span {
+  overflow: hidden;
+  font-family: monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svault-empty,
+.svault-report-note {
+  opacity: 0.68;
+  font-size: calc(var(--mainFontSize) * 0.82);
+}
+
+@media screen and (max-width: 768px) {
+  .svault-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .svault-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svault-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svault-button.menu_button {
+    width: 100%;
+  }
+
+  .svault-diff-row {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+
+  .svault-friendly-row {
+    grid-template-columns: 1fr max-content 1fr;
+  }
+
+  .svault-friendly-row > div {
+    grid-column: 1 / -1;
+  }
+
+  .svault-diff-row > div {
+    grid-column: 1 / -1;
+  }
+
+  .svault-timeline > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}
