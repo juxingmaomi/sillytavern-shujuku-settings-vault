@@ -3,7 +3,7 @@
 
   const MODULE_NAME = 'shujuku_settings_vault';
   const DISPLAY_NAME = '数据库配置保险箱';
-  const VERSION = '0.1.1';
+  const VERSION = '0.1.2';
   const EXTENSION_FOLDER = 'shujuku-settings-vault';
   const API_ROOT = '/api/plugins/shujuku-settings-vault';
   const PANEL_ID = 'shujuku-settings-vault-panel';
@@ -73,23 +73,29 @@
   function panelHtml() {
     return `
       <section id="${PANEL_ID}" class="svault-panel" aria-label="${DISPLAY_NAME}">
-        <div class="svault-heading">
-          <div class="svault-title-line">
-            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-            <strong>${DISPLAY_NAME}</strong>
-            <span class="svault-version" title="前端版本">v${VERSION}</span>
-          </div>
-          <span class="svault-health" data-role="health"><i class="fa-solid fa-circle-notch fa-spin"></i> 正在连接后端</span>
-        </div>
+        <details class="svault-shell" open>
+          <summary class="svault-heading" title="点击展开或收起数据库配置保险箱">
+            <div class="svault-heading-main">
+              <i class="fa-solid fa-circle-chevron-down svault-collapse-icon" aria-hidden="true"></i>
+              <div class="svault-title-line">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                <strong>${DISPLAY_NAME}</strong>
+                <span class="svault-version" title="前端版本">v${VERSION}</span>
+              </div>
+            </div>
+            <span class="svault-health" data-role="health"><i class="fa-solid fa-circle-notch fa-spin"></i> 正在连接后端</span>
+          </summary>
 
-        <div class="svault-status-grid" aria-live="polite">
+          <div class="svault-body">
+
+          <div class="svault-status-grid" aria-live="polite">
           <div><span>基准配置</span><strong data-role="baseline-time">读取中</strong></div>
           <div><span>当前状态</span><strong data-role="match-state">读取中</strong></div>
           <div><span>服务器写入</span><strong data-role="settings-time">读取中</strong></div>
           <div><span>后端版本</span><strong data-role="backend-version">读取中</strong></div>
-        </div>
+          </div>
 
-        <div class="svault-actions svault-actions-primary">
+          <div class="svault-actions svault-actions-primary">
           <button type="button" class="menu_button svault-button" data-action="baseline" title="把服务器上当前数据库配置保存为基准">
             <i class="fa-solid fa-floppy-disk"></i><span>保存为基准</span>
           </button>
@@ -99,9 +105,9 @@
           <button type="button" class="menu_button svault-button" data-action="rollback" title="撤销最近一次恢复">
             <i class="fa-solid fa-rotate-left"></i><span>撤销恢复</span>
           </button>
-        </div>
+          </div>
 
-        <div class="svault-actions svault-actions-secondary">
+          <div class="svault-actions svault-actions-secondary">
           <button type="button" class="menu_button svault-button" data-action="report" title="比较当前配置、基准配置和最近设置备份">
             <i class="fa-solid fa-list-check"></i><span>检查变化</span>
           </button>
@@ -111,16 +117,18 @@
           <button type="button" class="menu_button svault-button" data-action="update" title="手动检查并下载前端与后端更新">
             <i class="fa-solid fa-arrows-rotate"></i><span>手动更新</span>
           </button>
-        </div>
+          </div>
 
-        <div class="svault-notice">
+          <div class="svault-notice">
           <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
           <span>恢复前请关闭其他设备上的酒馆页面。插件不会重启后台，也不会修改聊天、人物卡或其他设置。</span>
-        </div>
+          </div>
 
-        <details class="svault-report" data-role="report-box">
-          <summary><i class="fa-solid fa-chart-column"></i> 变更报告</summary>
-          <div class="svault-report-content" data-role="report-content">点击“检查变化”后显示。</div>
+          <details class="svault-report" data-role="report-box">
+            <summary><i class="fa-solid fa-chart-column"></i> 变更报告</summary>
+            <div class="svault-report-content" data-role="report-content">点击“检查变化”后显示。</div>
+          </details>
+          </div>
         </details>
       </section>`;
   }

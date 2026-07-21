@@ -1,13 +1,28 @@
 .svault-panel {
-  display: grid;
-  gap: 12px;
   width: 100%;
   margin: 12px 0;
-  padding: 12px 0;
   border-top: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 75%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 75%, transparent);
   color: var(--SmartThemeBodyColor);
   box-sizing: border-box;
+}
+
+.svault-shell {
+  width: 100%;
+}
+
+.svault-shell > summary {
+  list-style: none;
+}
+
+.svault-shell > summary::-webkit-details-marker {
+  display: none;
+}
+
+.svault-body {
+  display: grid;
+  gap: 12px;
+  padding: 4px 0 12px;
 }
 
 .svault-heading,
@@ -24,6 +39,26 @@
   justify-content: space-between;
   gap: 12px;
   min-width: 0;
+  min-height: 42px;
+  padding: 4px 2px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.svault-heading-main {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.svault-collapse-icon {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.svault-shell:not([open]) .svault-collapse-icon {
+  transform: rotate(-90deg);
 }
 
 .svault-title-line {
@@ -357,9 +392,17 @@
 
 @media screen and (max-width: 768px) {
   .svault-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 5px;
+    gap: 8px;
+  }
+
+  .svault-heading-main {
+    flex: 1 1 auto;
+  }
+
+  .svault-health {
+    max-width: 42%;
+    justify-content: flex-end;
+    text-align: right;
   }
 
   .svault-status-grid {

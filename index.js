@@ -9,7 +9,7 @@ const { promisify } = require('node:util');
 const execFileAsync = promisify(execFile);
 
 const PLUGIN_ID = 'shujuku-settings-vault';
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 const SCHEMA_VERSION = 1;
 const TARGET_KEY = 'shujuku_v120__userscript_settings_v1';
 const TARGET_PATH = ['extension_settings', '__userscripts', TARGET_KEY];
