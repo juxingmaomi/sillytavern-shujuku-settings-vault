@@ -3,7 +3,7 @@
 
   const MODULE_NAME = 'shujuku_settings_vault';
   const DISPLAY_NAME = '数据库配置保险箱';
-  const VERSION = '0.1.2';
+  const VERSION = '0.2.0';
   const EXTENSION_FOLDER = 'shujuku-settings-vault';
   const API_ROOT = '/api/plugins/shujuku-settings-vault';
   const PANEL_ID = 'shujuku-settings-vault-panel';
@@ -96,11 +96,11 @@
           </div>
 
           <div class="svault-actions svault-actions-primary">
-          <button type="button" class="menu_button svault-button" data-action="baseline" title="把服务器上当前数据库配置保存为基准">
-            <i class="fa-solid fa-floppy-disk"></i><span>保存为基准</span>
+          <button type="button" class="menu_button svault-button" data-action="baseline" title="保存 API、向量、剧情和提取规则等关键配置">
+            <i class="fa-solid fa-floppy-disk"></i><span>保存关键配置</span>
           </button>
-          <button type="button" class="menu_button svault-button svault-button-accent" data-action="restore" title="只恢复数据库设置块">
-            <i class="fa-solid fa-clock-rotate-left"></i><span>恢复基准</span>
+          <button type="button" class="menu_button svault-button svault-button-accent" data-action="restore" title="只恢复关键配置，不覆盖角色、聊天和表格数据">
+            <i class="fa-solid fa-clock-rotate-left"></i><span>恢复关键配置</span>
           </button>
           <button type="button" class="menu_button svault-button" data-action="rollback" title="撤销最近一次恢复">
             <i class="fa-solid fa-rotate-left"></i><span>撤销恢复</span>
@@ -121,7 +121,7 @@
 
           <div class="svault-notice">
           <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-          <span>恢复前请关闭其他设备上的酒馆页面。插件不会重启后台，也不会修改聊天、人物卡或其他设置。</span>
+          <span>恢复只处理关键数据库配置，角色独立设置、聊天分支和表格实际数据会保留。操作前请关闭其他设备上的酒馆页面。</span>
           </div>
 
           <details class="svault-report" data-role="report-box">
@@ -284,8 +284,8 @@
 
   async function saveBaseline(button) {
     const confirmed = await confirmAction(
-      '保存数据库基准配置',
-      '将把服务器当前的数据库设置保存为新的基准。<br><br>请先确认 API、向量、召回和重排设置都处于正确状态。',
+      '保存关键配置基准',
+      '将保存 API、向量、重排、剧情召回、正文提取和表格注入规则。<br><br>不会把聊天记录、角色独立设置或表格实际数据保存为恢复内容。',
     );
     if (!confirmed) return;
     setBusy(true, button);
@@ -303,14 +303,14 @@
 
   async function restoreBaseline(button) {
     const confirmed = await confirmAction(
-      '恢复数据库基准配置',
-      '<strong>请先关闭手机和其他电脑上的酒馆页面。</strong><br><br>恢复只替换数据库设置块，恢复前会自动备份当前 settings.json。完成后需要重新加载当前页面。',
+      '恢复关键数据库配置',
+      '<strong>请先关闭手机和其他电脑上的酒馆页面。</strong><br><br>只恢复 API、向量、剧情召回、正文提取和表格注入规则。不会覆盖角色独立设置、聊天分支或表格实际数据；恢复前仍会完整备份当前 settings.json。',
     );
     if (!confirmed) return;
     setBusy(true, button);
     try {
       const result = await requestApi('restore', { method: 'POST', body: { confirm: true } });
-      toast('success', `数据库配置已恢复，共处理 ${result.changes.total} 项变化。请重新加载页面。`);
+      toast('success', `关键数据库配置已恢复，共处理 ${result.changes.total} 项变化。角色和聊天数据未覆盖，请重新加载页面。`);
       state.report = null;
       await refreshStatus();
     } catch (error) {
@@ -323,7 +323,7 @@
   async function rollbackRestore(button) {
     const confirmed = await confirmAction(
       '撤销最近一次恢复',
-      '将把数据库设置恢复为上一次点击“恢复基准”之前的状态。操作前仍会再次备份当前 settings.json。',
+      '将只撤销上一次“恢复关键配置”操作。角色、聊天和表格数据不会被覆盖。操作前仍会再次备份当前 settings.json。',
     );
     if (!confirmed) return;
     setBusy(true, button);

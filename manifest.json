@@ -4,7 +4,7 @@
   "js": "ui/index.js",
   "css": "ui/style.css",
   "author": "Codex",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "homePage": "https://github.com/juxingmaomi/sillytavern-shujuku-settings-vault",
   "auto_update": false,
   "minimum_client_version": "1.16.0"

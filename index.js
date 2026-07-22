@@ -9,8 +9,8 @@ const { promisify } = require('node:util');
 const execFileAsync = promisify(execFile);
 
 const PLUGIN_ID = 'shujuku-settings-vault';
-const VERSION = '0.1.2';
-const SCHEMA_VERSION = 1;
+const VERSION = '0.2.0';
+const SCHEMA_VERSION = 2;
 const TARGET_KEY = 'shujuku_v120__userscript_settings_v1';
 const TARGET_PATH = ['extension_settings', '__userscripts', TARGET_KEY];
 const MAX_AUDIT_ENTRIES = 200;
@@ -20,6 +20,36 @@ const MAX_SAVED_REPORTS = 20;
 const MAX_BASELINE_HISTORY = 10;
 const MAX_FULL_SETTINGS_BACKUPS = 5;
 const SENSITIVE_FIELD = /(?:api.?key|token|secret|password|authorization|credential|access.?key|cookie|session|email|密钥|令牌|密码|凭据|邮箱)/i;
+
+const SNAPSHOT_SCOPE_VERSION = 1;
+const GLOBAL_META_KEY = 'shujuku_v120_globalMeta_v1';
+const PROFILE_SETTINGS_KEY = 'shujuku_v120_profile_v1____default____settings';
+const ACTIVE_TEMPLATE_KEY = 'shujuku_v120_profile_v1____default____template';
+const TEMPLATE_PRESETS_KEY = 'shujuku_v120_templatePresets_v1';
+const PROFILE_FIELDS = [
+  'apiConfig',
+  'apiPresets',
+  'defaultApiPresetName',
+  'tableApiPreset',
+  'plotApiPreset',
+  'apiPresetBindingsByChat',
+  'plotPresetBindings',
+  'streamingEnabled',
+  'autoUpdateEnabled',
+  'autoMergeEnabled',
+  'summaryVectorIndexModeDefault',
+  'plotSettings',
+  'tableContextExtractTags',
+  'tableContextExtractRules',
+  'tableContextExcludeTags',
+  'removeTags',
+  'contentOptimizationSettings',
+];
+const GLOBAL_META_FIELDS = [
+  'vectorMemoryConfigGlobal',
+  'summaryVectorIndexModeGlobal',
+  'plotEnabledGlobal',
+];
 
 function nowIso() {
   return new Date().toISOString();
@@ -50,6 +80,124 @@ function expandEmbeddedJson(value) {
     return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, expandEmbeddedJson(item)]));
   }
   return value;
+}
+
+function cloneField(source, key) {
+  return source && Object.hasOwn(source, key) ? cloneJson(source[key]) : undefined;
+}
+
+function mergeNamedArray(current, saved, nameKey = 'name') {
+  if (!Array.isArray(saved)) return cloneJson(current ?? []);
+  const currentItems = Array.isArray(current) ? current : [];
+  const currentByName = new Map(currentItems.map(item => [item?.[nameKey], item]));
+  const result = saved.map(item => cloneJson(item));
+  const savedNames = new Set(saved.map(item => item?.[nameKey]));
+  for (const item of currentItems) {
+    if (!savedNames.has(item?.[nameKey])) result.push(cloneJson(item));
+  }
+  return result.map(item => currentByName.has(item?.[nameKey]) && !savedNames.has(item?.[nameKey])
+    ? cloneJson(currentByName.get(item[nameKey]))
+    : item);
+}
+
+function mergeMapKeepingCurrentExtras(current, saved) {
+  return {
+    ...(current && typeof current === 'object' ? cloneJson(current) : {}),
+    ...(saved && typeof saved === 'object' ? cloneJson(saved) : {}),
+  };
+}
+
+function captureExportConfigs(value) {
+  if (!value || typeof value !== 'object') return undefined;
+  const result = {};
+  if (value.exportConfig && typeof value.exportConfig === 'object') {
+    result.__exportConfig = cloneJson(value.exportConfig);
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (key === 'exportConfig') continue;
+    const captured = captureExportConfigs(child);
+    if (captured && Object.keys(captured).length) result[key] = captured;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
+function applyExportConfigs(current, saved) {
+  if (!current || typeof current !== 'object' || !saved || typeof saved !== 'object') return;
+  if (saved.__exportConfig && typeof current.exportConfig === 'object') {
+    current.exportConfig = cloneJson(saved.__exportConfig);
+  }
+  for (const [key, child] of Object.entries(saved)) {
+    if (key === '__exportConfig' || !Object.hasOwn(current, key)) continue;
+    applyExportConfigs(current[key], child);
+  }
+}
+
+function createSelectiveSnapshot(target) {
+  const expanded = expandEmbeddedJson(target) ?? {};
+  const globalMeta = expanded[GLOBAL_META_KEY] ?? {};
+  const settings = expanded[PROFILE_SETTINGS_KEY] ?? {};
+  const profileSettings = {};
+  for (const field of PROFILE_FIELDS) {
+    if (Object.hasOwn(settings, field)) profileSettings[field] = cloneJson(settings[field]);
+  }
+
+  return {
+    scope_version: SNAPSHOT_SCOPE_VERSION,
+    globalMeta: Object.fromEntries(GLOBAL_META_FIELDS
+      .filter(field => Object.hasOwn(globalMeta, field))
+      .map(field => [field, cloneJson(globalMeta[field])])),
+    profileSettings,
+    activeTemplateExports: captureExportConfigs(expanded[ACTIVE_TEMPLATE_KEY]) ?? {},
+    templatePresetExports: captureExportConfigs(expanded[TEMPLATE_PRESETS_KEY]) ?? {},
+  };
+}
+
+function normalizeBaselineData(baseline) {
+  if (baseline?.scope_version === SNAPSHOT_SCOPE_VERSION) return cloneJson(baseline.data);
+  return createSelectiveSnapshot(baseline?.data);
+}
+
+function applySelectiveSnapshot(currentTarget, savedSnapshot) {
+  const current = expandEmbeddedJson(currentTarget) ?? {};
+  const saved = savedSnapshot ?? {};
+  const currentMeta = current[GLOBAL_META_KEY] ?? {};
+  const currentSettings = current[PROFILE_SETTINGS_KEY] ?? {};
+  const savedMeta = saved.globalMeta ?? {};
+  const savedSettings = saved.profileSettings ?? {};
+
+  for (const [field, value] of Object.entries(savedMeta)) currentMeta[field] = cloneJson(value);
+  current[GLOBAL_META_KEY] = currentMeta;
+
+  for (const field of PROFILE_FIELDS) {
+    if (!Object.hasOwn(savedSettings, field)) continue;
+    if (field === 'apiPresets') {
+      currentSettings[field] = mergeNamedArray(currentSettings[field], savedSettings[field]);
+    } else if (field === 'apiPresetBindingsByChat' || field === 'plotPresetBindings') {
+      currentSettings[field] = mergeMapKeepingCurrentExtras(currentSettings[field], savedSettings[field]);
+    } else if (field === 'plotSettings') {
+      const currentPlot = currentSettings[field] ?? {};
+      const savedPlot = savedSettings[field] ?? {};
+      const mergedPlot = { ...cloneJson(currentPlot), ...cloneJson(savedPlot) };
+      mergedPlot.promptPresets = mergeNamedArray(currentPlot.promptPresets, savedPlot.promptPresets);
+      mergedPlot.plotTasks = mergeNamedArray(currentPlot.plotTasks, savedPlot.plotTasks);
+      currentSettings[field] = mergedPlot;
+    } else {
+      currentSettings[field] = cloneJson(savedSettings[field]);
+    }
+  }
+  current[PROFILE_SETTINGS_KEY] = currentSettings;
+  applyExportConfigs(current[ACTIVE_TEMPLATE_KEY], saved.activeTemplateExports);
+  applyExportConfigs(current[TEMPLATE_PRESETS_KEY], saved.templatePresetExports);
+
+  return current;
+}
+
+function encodeTargetLikeOriginal(expandedTarget, originalTarget) {
+  const encoded = {};
+  for (const [key, value] of Object.entries(expandedTarget)) {
+    encoded[key] = typeof originalTarget?.[key] === 'string' ? JSON.stringify(value) : value;
+  }
+  return encoded;
 }
 
 function hashJson(value) {
@@ -173,7 +321,7 @@ function readSettings(paths) {
 function readBaseline(paths) {
   if (!fs.existsSync(paths.baselinePath)) return null;
   const baseline = readJson(paths.baselinePath);
-  if (baseline?.schema_version !== SCHEMA_VERSION || baseline?.target_key !== TARGET_KEY || baseline?.data === undefined) {
+  if (![1, SCHEMA_VERSION].includes(baseline?.schema_version) || baseline?.target_key !== TARGET_KEY || baseline?.data === undefined) {
     throw new Error('The saved baseline file is invalid.');
   }
   if (baseline.target_hash !== hashJson(baseline.data)) {
@@ -274,7 +422,12 @@ function isConfigured(...values) {
 }
 
 function buildFriendlySnapshot(target) {
-  const expanded = expandEmbeddedJson(target) ?? {};
+  const expanded = target?.scope_version === SNAPSHOT_SCOPE_VERSION
+    ? {
+      [GLOBAL_META_KEY]: target.globalMeta ?? {},
+      [PROFILE_SETTINGS_KEY]: target.profileSettings ?? {},
+    }
+    : expandEmbeddedJson(target) ?? {};
   const meta = expanded.shujuku_v120_globalMeta_v1 ?? {};
   const settings = expanded.shujuku_v120_profile_v1____default____settings ?? {};
   const vector = meta.vectorMemoryConfigGlobal ?? {};
@@ -419,6 +572,7 @@ function patchSettingsTarget(paths, replacement, backupLabel) {
 
 function saveBaseline(paths) {
   const { target } = readSettings(paths);
+  const snapshot = createSelectiveSnapshot(target);
   fs.mkdirSync(paths.vaultDirectory, { recursive: true });
   const previous = readBaseline(paths);
   if (previous) {
@@ -434,8 +588,9 @@ function saveBaseline(paths) {
     target_key: TARGET_KEY,
     created_at: nowIso(),
     source_settings_modified_at: settingsStat.mtime.toISOString(),
-    target_hash: hashJson(target),
-    data: cloneJson(target),
+    scope_version: SNAPSHOT_SCOPE_VERSION,
+    target_hash: hashJson(snapshot),
+    data: snapshot,
   };
   writeJson(paths.baselinePath, baseline);
   appendAudit(paths, {
@@ -450,22 +605,31 @@ function restoreBaseline(paths) {
   const baseline = readBaseline(paths);
   if (!baseline) throw new Error('No baseline has been saved yet.');
   const { target: currentTarget } = readSettings(paths);
-  const difference = diffValues(currentTarget, baseline.data);
+  const savedSnapshot = normalizeBaselineData(baseline);
+  const replacement = encodeTargetLikeOriginal(
+    applySelectiveSnapshot(currentTarget, savedSnapshot),
+    currentTarget,
+  );
+  const difference = diffValues(
+    createSelectiveSnapshot(currentTarget),
+    createSelectiveSnapshot(replacement),
+  );
   const rollback = {
     schema_version: SCHEMA_VERSION,
     plugin_version: VERSION,
     target_key: TARGET_KEY,
     created_at: nowIso(),
-    target_hash: hashJson(currentTarget),
-    data: cloneJson(currentTarget),
+    scope_version: SNAPSHOT_SCOPE_VERSION,
+    target_hash: hashJson(createSelectiveSnapshot(currentTarget)),
+    data: createSelectiveSnapshot(currentTarget),
   };
   fs.mkdirSync(paths.vaultDirectory, { recursive: true });
   writeJson(paths.rollbackPath, rollback);
-  const result = patchSettingsTarget(paths, baseline.data, 'manual-before-shujuku-vault-restore');
+  const result = patchSettingsTarget(paths, replacement, 'manual-before-shujuku-vault-restore');
   appendAudit(paths, {
     action: 'baseline_restored',
-    from_hash: hashJson(currentTarget),
-    to_hash: baseline.target_hash,
+    from_hash: hashJson(createSelectiveSnapshot(currentTarget)),
+    to_hash: hashJson(createSelectiveSnapshot(replacement)),
     full_backup: path.basename(result.fullBackupPath),
     changes: summarizeDiff(difference),
   });
@@ -479,12 +643,20 @@ function rollbackRestore(paths) {
     throw new Error('The rollback file failed its integrity check.');
   }
   const { target: currentTarget } = readSettings(paths);
-  const difference = diffValues(currentTarget, rollback.data);
-  const result = patchSettingsTarget(paths, rollback.data, 'manual-before-shujuku-vault-undo');
+  const rollbackSnapshot = normalizeBaselineData(rollback);
+  const replacement = encodeTargetLikeOriginal(
+    applySelectiveSnapshot(currentTarget, rollbackSnapshot),
+    currentTarget,
+  );
+  const difference = diffValues(
+    createSelectiveSnapshot(currentTarget),
+    createSelectiveSnapshot(replacement),
+  );
+  const result = patchSettingsTarget(paths, replacement, 'manual-before-shujuku-vault-undo');
   appendAudit(paths, {
     action: 'restore_undone',
-    from_hash: hashJson(currentTarget),
-    to_hash: rollback.target_hash,
+    from_hash: hashJson(createSelectiveSnapshot(currentTarget)),
+    to_hash: hashJson(createSelectiveSnapshot(replacement)),
     full_backup: path.basename(result.fullBackupPath),
     changes: summarizeDiff(difference),
   });
@@ -495,16 +667,18 @@ function getStatus(paths) {
   const { target } = readSettings(paths);
   const baseline = readBaseline(paths);
   const audit = readAudit(paths);
-  const currentHash = hashJson(target);
+  const currentHash = hashJson(createSelectiveSnapshot(target));
+  const baselineSnapshot = baseline ? normalizeBaselineData(baseline) : null;
+  const baselineHash = baselineSnapshot ? hashJson(baselineSnapshot) : null;
   return {
     ok: true,
     version: VERSION,
     target_key: TARGET_KEY,
     baseline_exists: Boolean(baseline),
     baseline_created_at: baseline?.created_at ?? null,
-    current_matches_baseline: baseline ? currentHash === baseline.target_hash : null,
+    current_matches_baseline: baseline ? currentHash === baselineHash : null,
     current_hash: currentHash.slice(0, 12),
-    baseline_hash: baseline?.target_hash?.slice(0, 12) ?? null,
+    baseline_hash: baselineHash?.slice(0, 12) ?? null,
     current_settings_modified_at: fs.statSync(paths.settingsPath).mtime.toISOString(),
     rollback_available: fs.existsSync(paths.rollbackPath),
     last_action: audit.at(-1) ?? null,
@@ -531,13 +705,14 @@ function buildTimeline(paths) {
     try {
       const target = getValueAtPath(readJson(file.filePath));
       if (target === undefined) continue;
-      const hash = hashJson(target);
+      const snapshot = createSelectiveSnapshot(target);
+      const hash = hashJson(snapshot);
       if (!previous) {
-        previous = { ...file, hash, target };
+        previous = { ...file, hash, target: snapshot };
         continue;
       }
       if (previous.hash !== hash) {
-        const difference = diffValues(expandEmbeddedJson(previous.target), expandEmbeddedJson(target), { maxDetails: 30 });
+        const difference = diffValues(previous.target, snapshot, { maxDetails: 30 });
         const friendly = buildFriendlyChanges(previous.target, target);
         transitions.push({
           from_file: previous.name,
@@ -550,7 +725,7 @@ function buildTimeline(paths) {
           details: difference.details,
         });
       }
-      previous = { ...file, hash, target };
+      previous = { ...file, hash, target: snapshot };
     } catch {
       // Ignore invalid or unrelated SillyTavern backup files.
     }
@@ -561,18 +736,20 @@ function buildTimeline(paths) {
 function buildReport(paths) {
   const { target } = readSettings(paths);
   const baseline = readBaseline(paths);
-  const comparison = baseline ? diffValues(expandEmbeddedJson(baseline.data), expandEmbeddedJson(target)) : null;
-  const friendly = baseline ? buildFriendlyChanges(baseline.data, target) : null;
+  const currentSnapshot = createSelectiveSnapshot(target);
+  const baselineSnapshot = baseline ? normalizeBaselineData(baseline) : null;
+  const comparison = baselineSnapshot ? diffValues(baselineSnapshot, currentSnapshot) : null;
+  const friendly = baselineSnapshot ? buildFriendlyChanges(baselineSnapshot, currentSnapshot) : null;
   return {
     generated_at: nowIso(),
     plugin_version: VERSION,
     target_key: TARGET_KEY,
     baseline: baseline ? {
       created_at: baseline.created_at,
-      hash: baseline.target_hash.slice(0, 12),
+      hash: hashJson(baselineSnapshot).slice(0, 12),
     } : null,
     current: {
-      hash: hashPrefix(target),
+      hash: hashPrefix(currentSnapshot),
       settings_modified_at: fs.statSync(paths.settingsPath).mtime.toISOString(),
     },
     comparison: comparison ? {
@@ -750,7 +927,9 @@ module.exports = {
     buildFriendlyChanges,
     buildFriendlySnapshot,
     cloneJson,
+    createSelectiveSnapshot,
     diffValues,
+    encodeTargetLikeOriginal,
     expandEmbeddedJson,
     getStatus,
     getValueAtPath,
@@ -759,6 +938,9 @@ module.exports = {
     patchSettingsTarget,
     pruneOwnedFiles,
     readBaseline,
+    readJson,
+    normalizeBaselineData,
+    applySelectiveSnapshot,
     restoreBaseline,
     rollbackRestore,
     saveBaseline,

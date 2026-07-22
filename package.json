@@ -1,6 +1,6 @@
 {
   "name": "sillytavern-shujuku-settings-vault",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A scoped server-side configuration vault for the Shujuku Tavern Helper userscript.",
   "main": "index.js",
   "type": "commonjs",
